@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Food Recipe App (Next.js)
+
+A recipe discovery app built with Next.js, Tailwind CSS, and DaisyUI. This is a group project for the Recipe Book assignment.
+
+## Tech Stack
+
+- **Framework:** Next.js 16 (App Router)
+- **Language:** JavaScript for week 1, with a TypeScript refactor planned for week 2
+- **Styling:** Tailwind CSS v4 + DaisyUI
+- **Data Fetching:** React Query (client-side) and Next.js server functions (server-side)
+- **Database:** Neon (to be integrated when instructed)
+- **Deployment:** Vercel
+
+## Features (planned)
+
+- Search recipes by name
+- View detailed recipe instructions and ingredients
+- Save favorite recipes (client-side until Neon CRUD is added)
+- Loading and error states for all data-driven pages
+- Responsive design with Tailwind CSS and DaisyUI
 
 ## Getting Started
 
-First, run the development server:
+First, install dependencies and run the development server:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `src/app/page.js`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load Geist, a new font family for Vercel.
+```text
+src/
+  app/              # Next.js App Router pages
+  components/       # Reusable UI components
+  context/          # React context providers (e.g., favorites)
+  provider/         # React Query provider setup
+  utils/            # Server functions and utility helpers
+  types/            # TypeScript types (added during week 2 refactor)
+```
+
+## Git Workflow
+
+- The repository is public at [https://github.com/Kikanmened/food-recipe-app-nextJS](https://github.com/Kikanmened/food-recipe-app-nextJS).
+- All changes must be merged into `main` via pull request.
+- Make small, frequent commits with clear messages.
+
+## Roadmap
+
+- **Week 1:** Build the app in JavaScript with Next.js, Tailwind, DaisyUI, and React Query. Integrate Neon for data fetching when instructions are provided.
+- **Week 2:** Refactor the codebase to TypeScript, add `src/types/`, and continue feature development.
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
+- [DaisyUI Documentation](https://daisyui.com/)
+- [React Query Documentation](https://tanstack.com/query/latest)
