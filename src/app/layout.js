@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/provider";
+import { FavoritesState } from "@/context";
 import { Navbar, Footer } from "@/components/layout";
 
 const geistSans = Geist({
@@ -25,11 +26,13 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col bg-base-100 text-base-content`}
       >
         <QueryProvider>
-          <Navbar />
-          <main className="flex-1">
-            {children}
-          </main>
-          <Footer />
+          <FavoritesState>
+            <Navbar />
+            <main className="flex-1">
+              {children}
+            </main>
+            <Footer />
+          </FavoritesState>
         </QueryProvider>
       </body>
     </html>
