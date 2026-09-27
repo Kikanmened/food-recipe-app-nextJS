@@ -1,32 +1,37 @@
 'use client'
 
-import { Suspense } from 'react'
+import { Suspense, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
+import RecipeFilters, { applyRecipeFilters } from '@/components/recipe/RecipeFilters'
 import { RecipeList } from '@/components/recipe'
 import { Loader, SearchBar } from '@/components/ui'
 import { handleFetch } from '@/utils'
 
+const emptyFilters = {
+  sort: 'newest',
+  minIngredients: '',
+  ingredient: '',
+}
+
 function SearchPageContent() {
   const searchParams = useSearchParams()
   const query = (searchParams.get('q') || '').trim()
+  const [filters, setFilters] = useState(emptyFilters)
 
   const { data: recipes = [], isPending, isError, error, refetch } = useQuery({
     queryKey: ['recipes'],
     queryFn: () => handleFetch('/api/recipes'),
   })
 
-  const filtered = query
-    ? recipes.filter((recipe) =>
-        recipe.title.toLowerCase().includes(query.toLowerCase())
-      )
-    : recipes
+  const filtered = applyRecipeFilters(recipes, { query, ...filters })
 
   return (
     <section className="mx-auto max-w-6xl space-y-6 px-4 py-12">
       <div className="space-y-4">
         <h1 className="text-3xl font-bold">Search</h1>
         <SearchBar />
+        <RecipeFilters filters={filters} onChange={setFilters} />
       </div>
 
       {isPending ? (
