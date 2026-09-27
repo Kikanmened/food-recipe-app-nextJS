@@ -7,10 +7,13 @@ create table if not exists recipes (
     title       text not null,
     ingredients jsonb not null,
     steps       text[] not null,
+    image_url   text,
     created_at  timestamptz default now()
 );
 
-INSERT INTO recipes (user_id, title, ingredients, steps) VALUES
+alter table recipes add column if not exists image_url text;
+
+INSERT INTO recipes (user_id, title, ingredients, steps, image_url) VALUES
 (
   'seed-user',
   'Spaghetti Carbonara',
@@ -29,7 +32,8 @@ INSERT INTO recipes (user_id, title, ingredients, steps) VALUES
     'Toss the hot pasta with the guanciale, then remove from heat.',
     'Stir in the egg and cheese mixture, adding pasta water until creamy.',
     'Serve immediately with extra black pepper and cheese.'
-  ]
+  ],
+  '/images/spaghetti-carbonara.png'
 ),
 (
   'seed-user',
@@ -50,7 +54,8 @@ INSERT INTO recipes (user_id, title, ingredients, steps) VALUES
     'Stir fry the vegetables and garlic for 3-4 minutes until tender-crisp.',
     'Return the chicken to the pan and add soy sauce.',
     'Toss everything together and serve hot over rice or noodles.'
-  ]
+  ],
+  '/images/chicken-stir-fry.png'
 ),
 (
   'seed-user',
@@ -71,7 +76,8 @@ INSERT INTO recipes (user_id, title, ingredients, steps) VALUES
     'Simmer for 15 minutes, stirring occasionally.',
     'Stir in the spinach and cook until wilted.',
     'Serve with rice or flatbread.'
-  ]
+  ],
+  '/images/vegetable-curry.png'
 ),
 (
   'seed-user',
@@ -92,5 +98,11 @@ INSERT INTO recipes (user_id, title, ingredients, steps) VALUES
     'Pour in batter to form pancakes and cook until bubbles form on the surface.',
     'Flip and cook until golden brown on the other side.',
     'Serve with syrup, fruit, or your favorite toppings.'
-  ]
+  ],
+  '/images/classic-pancakes.png'
 );
+
+update recipes set image_url = '/images/spaghetti-carbonara.png' where title = 'Spaghetti Carbonara';
+update recipes set image_url = '/images/chicken-stir-fry.png' where title = 'Chicken Stir Fry';
+update recipes set image_url = '/images/vegetable-curry.png' where title = 'Vegetable Curry';
+update recipes set image_url = '/images/classic-pancakes.png' where title = 'Classic Pancakes';

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { RecipeImage } from '@/components/recipe'
 import { Button } from '@/components/ui'
 import { useFavorites } from '@/context'
 
@@ -14,7 +15,10 @@ function FavoriteNoteCard({ favorite }) {
   }, [favorite.note])
 
   return (
-    <article className="card bg-base-200 shadow-md">
+    <article className="card bg-base-200 shadow-md overflow-hidden">
+      <figure>
+        <RecipeImage recipe={favorite} />
+      </figure>
       <div className="card-body space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <h2 className="card-title">{favorite.title}</h2>

@@ -46,6 +46,7 @@ export default function FavoritesState({ children }) {
           {
             id: recipe.id,
             title: recipe.title,
+            image_url: recipe.image_url || recipe.imageUrl || '',
             note: recipe.note || '',
             savedAt: new Date().toISOString(),
           },
