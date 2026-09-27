@@ -16,9 +16,9 @@ function FavoriteNoteCard({ favorite }) {
 
   return (
     <article className="card bg-base-200 shadow-md overflow-hidden">
-      <figure>
-        <RecipeImage recipe={favorite} />
-      </figure>
+      <div className="h-48 w-full overflow-hidden bg-base-300">
+        <RecipeImage recipe={favorite} className="h-full w-full object-cover" />
+      </div>
       <div className="card-body space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <h2 className="card-title">{favorite.title}</h2>

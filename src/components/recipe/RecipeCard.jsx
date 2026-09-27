@@ -8,9 +8,9 @@ export default function RecipeCard({ recipe }) {
 
   return (
     <article className="card bg-base-200 shadow-md overflow-hidden">
-      <figure>
-        <RecipeImage recipe={recipe} />
-      </figure>
+      <div className="h-48 w-full overflow-hidden bg-base-300">
+        <RecipeImage recipe={recipe} className="h-full w-full object-cover" />
+      </div>
       <div className="card-body">
         <h2 className="card-title">{recipe.title}</h2>
         <div className="flex flex-wrap gap-2">
