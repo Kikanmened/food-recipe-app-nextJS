@@ -44,6 +44,7 @@ const emptyForm = {
   title: '',
   ingredients: '',
   steps: '',
+  imageUrl: '',
 }
 
 export default function RecipeForm() {
@@ -74,7 +75,12 @@ export default function RecipeForm() {
       return
     }
 
-    mutation.mutate({ title, ingredients, steps })
+    mutation.mutate({
+      title,
+      ingredients,
+      steps,
+      imageUrl: form.imageUrl.trim() || undefined,
+    })
   }
 
   return (
@@ -102,6 +108,17 @@ export default function RecipeForm() {
             className="textarea textarea-bordered min-h-28 w-full"
             placeholder={'spaghetti, 400g\neggs, 4 large'}
             required
+          />
+        </label>
+
+        <label className="form-control w-full">
+          <span className="label-text mb-1">Photo URL</span>
+          <input
+            name="imageUrl"
+            value={form.imageUrl}
+            onChange={handleChange}
+            className="input input-bordered w-full"
+            placeholder="/images/spaghetti-carbonara.png or https://..."
           />
         </label>
 

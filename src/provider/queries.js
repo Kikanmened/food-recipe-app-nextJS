@@ -31,10 +31,10 @@ export async function searchRecipes(query) {
 /**
  * Insert a new recipe and return it.
  */
-export async function createRecipe({ userId, title, ingredients, steps }) {
+export async function createRecipe({ userId, title, ingredients, steps, imageUrl }) {
   const rows = await sql`
-    insert into recipes (user_id, title, ingredients, steps)
-    values (${userId}, ${title}, ${ingredients}, ${steps})
+    insert into recipes (user_id, title, ingredients, steps, image_url)
+    values (${userId}, ${title}, ${ingredients}, ${steps}, ${imageUrl || null})
     returning *
   `
   return rows[0]

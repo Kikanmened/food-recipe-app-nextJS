@@ -4,5 +4,6 @@ create table recipes (
     title       text not null,
     ingredients jsonb not null,
     steps       text[] not null,
+    image_url   text,
     created_at  timestamptz default now()
 );

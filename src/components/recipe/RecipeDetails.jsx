@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui'
 import { useFavorites } from '@/context'
 import { formatIngredients } from '@/utils'
+import RecipeImage from './RecipeImage'
 
 function ingredientLabel(item) {
   if (item == null) return ''
@@ -36,6 +37,8 @@ export default function RecipeDetails({ recipe }) {
           {saved ? 'Remove favorite' : 'Save favorite'}
         </Button>
       </div>
+
+      <RecipeImage recipe={recipe} className="h-72 w-full rounded-2xl object-cover" />
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Ingredients</h2>

@@ -17,6 +17,7 @@ export async function POST(request) {
   const title = body.title?.trim()
   const ingredients = body.ingredients
   const steps = body.steps
+  const imageUrl = body.imageUrl?.trim() || null
 
   if (!title || !ingredients || !steps) {
     return Response.json(
@@ -30,6 +31,7 @@ export async function POST(request) {
     title,
     ingredients,
     steps,
+    imageUrl,
   })
 
   return Response.json(recipe, { status: 201 })

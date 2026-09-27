@@ -1,12 +1,16 @@
 import Link from 'next/link'
 import { formatIngredients } from '@/utils'
+import RecipeImage from './RecipeImage'
 
 export default function RecipeCard({ recipe }) {
   const ingredients = formatIngredients(recipe.ingredients)
   const stepCount = Array.isArray(recipe.steps) ? recipe.steps.length : 0
 
   return (
-    <article className="card bg-base-200 shadow-md">
+    <article className="card bg-base-200 shadow-md overflow-hidden">
+      <figure>
+        <RecipeImage recipe={recipe} />
+      </figure>
       <div className="card-body">
         <h2 className="card-title">{recipe.title}</h2>
         <div className="flex flex-wrap gap-2">
