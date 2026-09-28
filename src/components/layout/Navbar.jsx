@@ -2,6 +2,9 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { signOutAction } from '@/app/actions/auth'
+import { authClient } from '@/lib/auth/client'
+import ThemeToggle from './ThemeToggle'
 
 const links = [
   { href: '/', label: 'Home' },
@@ -12,6 +15,8 @@ const links = [
 
 export default function Navbar() {
   const pathname = usePathname()
+  const { data: session } = authClient.useSession()
+  const user = session?.user
 
   return (
     <div className="navbar bg-base-200 shadow-sm">
@@ -47,10 +52,29 @@ export default function Navbar() {
           ))}
         </ul>
       </div>
-      <div className="navbar-end">
-        <Link href="/sign-in" className="btn btn-primary">
-          Sign in
-        </Link>
+      <div className="navbar-end gap-2">
+        <ThemeToggle />
+        {user ? (
+          <>
+            <span className="hidden max-w-36 truncate text-sm sm:inline">
+              {user.name || user.email}
+            </span>
+            <form action={signOutAction}>
+              <button type="submit" className="btn btn-outline">
+                Sign out
+              </button>
+            </form>
+          </>
+        ) : (
+          <>
+            <Link href="/sign-in" className="btn btn-ghost">
+              Sign in
+            </Link>
+            <Link href="/sign-up" className="btn btn-primary">
+              Sign up
+            </Link>
+          </>
+        )}
       </div>
     </div>
   )
