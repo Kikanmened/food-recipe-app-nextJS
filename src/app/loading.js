@@ -1,7 +1,9 @@
+import { Loader } from '@/components/ui'
+
 export default function Loading() {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <span className="loading loading-spinner loading-lg text-primary"></span>
-      </div>
-    )
-  }
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <Loader />
+    </div>
+  )
+}

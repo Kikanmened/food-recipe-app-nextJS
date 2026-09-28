@@ -1,61 +1,91 @@
 # Food Recipe App (Next.js)
 
-A recipe discovery app built with Next.js, Tailwind CSS, and DaisyUI. This is a group project for the Recipe Book assignment.
+A recipe cookbook app built with Next.js, Neon, Tailwind CSS, and DaisyUI. This is a group project for the Recipe Book assignment.
 
 ## Tech Stack
 
 - **Framework:** Next.js 16 (App Router)
 - **Language:** JavaScript for week 1, with a TypeScript refactor planned for week 2
-- **Styling:** Tailwind CSS v4 + DaisyUI
-- **Data Fetching:** React Query (client-side) and Next.js server functions (server-side)
-- **Database:** Neon (to be integrated when instructed)
+- **Styling:** Tailwind CSS v4 + DaisyUI (light and dark themes)
+- **Data fetching:** TanStack React Query on the client, Neon SQL on the server
+- **Database:** [Neon](https://neon.tech) PostgreSQL
+- **Auth:** [Neon Auth](https://neon.tech/docs/auth/overview)
 - **Deployment:** Vercel
 
-## Features (planned)
+## Features
 
-- Search recipes by name
-- View detailed recipe instructions and ingredients
-- Save favorite recipes (client-side until Neon CRUD is added)
-- Loading and error states for all data-driven pages
-- Responsive design with Tailwind CSS and DaisyUI
+- Search recipes by title, sort, and filter by ingredients
+- Browse recipe cards with photos
+- View ingredients and step-by-step instructions
+- Add a recipe (signed-in users)
+- Save favorites and personal notes in localStorage
+- Sign up, sign in, and sign out
+- Light/dark mode toggle
+
+## Environment variables
+
+Create `.env.local` in the project root (never commit this file):
+
+```bash
+DATABASE_URL=
+NEON_AUTH_BASE_URL=
+NEON_AUTH_COOKIE_SECRET=
+```
+
+| Variable | Purpose |
+|---|---|
+| `DATABASE_URL` | Neon pooled connection string |
+| `NEON_AUTH_BASE_URL` | Neon Auth project URL from the Neon Console |
+| `NEON_AUTH_COOKIE_SECRET` | Cookie signing secret, at least 32 characters (`openssl rand -base64 32`) |
+
+Copy the first two values from the Neon Console. Generate the cookie secret locally. Do not put spaces around `=`.
+
+The same three variables must be set in the Vercel project for Production, Preview, and Development.
 
 ## Getting Started
-
-First, install dependencies and run the development server:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
+
+Optional: seed extra recipes from TheMealDB (skips titles that already exist):
+
+```bash
+npm run seed:themealdb
+```
 
 ## Project Structure
 
 ```text
 src/
-  app/              # Next.js App Router pages
-  components/       # Reusable UI components
-  context/          # React context providers (e.g., favorites)
-  provider/         # React Query provider setup
-  utils/            # Server functions and utility helpers
-  types/            # TypeScript types (added during week 2 refactor)
+  app/              # App Router pages and API routes
+  components/       # UI, layout, recipe, and auth components
+  context/          # Favorites provider (localStorage)
+  lib/              # Neon SQL client and Neon Auth
+  db/               # schema.sql and seed.sql
+  provider/         # React Query client and recipe queries
+  utils/            # Shared helpers
 ```
 
 ## Git Workflow
 
-- The repository is public at [https://github.com/Kikanmened/food-recipe-app-nextJS](https://github.com/Kikanmened/food-recipe-app-nextJS).
-- All changes must be merged into `main` via pull request.
-- Make small, frequent commits with clear messages.
+- Public repo: [https://github.com/Kikanmened/food-recipe-app-nextJS](https://github.com/Kikanmened/food-recipe-app-nextJS)
+- Merge into `main` through pull requests
+- Integrate work on `dev`, then merge `dev` to `main` when ready to ship
 
 ## Roadmap
 
-- **Week 1:** Build the app in JavaScript with Next.js, Tailwind, DaisyUI, and React Query. Integrate Neon for data fetching when instructions are provided.
-- **Week 2:** Refactor the codebase to TypeScript, add `src/types/`, and continue feature development.
+- **Week 1:** JavaScript Next.js app with Neon, Neon Auth, Tailwind, DaisyUI, and React Query
+- **Week 2:** Refactor to TypeScript and add `src/types/`
 
 ## Learn More
 
 - [Next.js Documentation](https://nextjs.org/docs)
+- [Neon Documentation](https://neon.tech/docs)
+- [Neon Auth for Next.js](https://neon.tech/docs/auth/quick-start/nextjs)
 - [Tailwind CSS Documentation](https://tailwindcss.com/docs)
 - [DaisyUI Documentation](https://daisyui.com/)
 - [React Query Documentation](https://tanstack.com/query/latest)
