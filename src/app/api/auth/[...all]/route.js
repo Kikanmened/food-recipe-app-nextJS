@@ -1,6 +1,4 @@
-import { auth } from '@/lib/auth/server'
-
-const { GET: handleGet, POST: handlePost } = auth.handler()
+import { getAuth } from '@/lib/auth/server'
 
 function withPathAlias(handler) {
   return async (request, context) => {
@@ -14,5 +12,12 @@ function withPathAlias(handler) {
   }
 }
 
-export const GET = withPathAlias(handleGet)
-export const POST = withPathAlias(handlePost)
+export async function GET(request, context) {
+  const { GET: handleGet } = getAuth().handler()
+  return withPathAlias(handleGet)(request, context)
+}
+
+export async function POST(request, context) {
+  const { POST: handlePost } = getAuth().handler()
+  return withPathAlias(handlePost)(request, context)
+}
