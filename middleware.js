@@ -1,6 +1,8 @@
-import { auth } from '@/lib/auth/server'
+import { getAuth } from '@/lib/auth/server'
 
-export const middleware = auth.middleware()
+export function middleware(request, event) {
+  return getAuth().middleware()(request, event)
+}
 
 export const config = {
   matcher: ['/recipes/:path*', '/favorites/:path*'],
