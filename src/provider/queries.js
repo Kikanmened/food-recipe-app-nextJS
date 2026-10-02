@@ -32,10 +32,78 @@ export async function searchRecipes(query) {
  * Insert a new recipe and return it.
  */
 export async function createRecipe({ userId, title, ingredients, steps, imageUrl }) {
+  const ingredientsJson = JSON.stringify(ingredients)
+
   const rows = await sql`
     insert into recipes (user_id, title, ingredients, steps, image_url)
-    values (${userId}, ${title}, ${ingredients}, ${steps}, ${imageUrl || null})
+    values (${userId}, ${title}, ${ingredientsJson}::jsonb, ${steps}, ${imageUrl || null})
     returning *
   `
   return rows[0]
+}
+
+export async function getFavoriteRecipesForUser(userId) {
+  return await sql`
+    select
+      f.recipe_id as id,
+      f.recipe_id,
+      f.note,
+      f.created_at,
+      r.title,
+      r.image_url,
+      r.ingredients,
+      r.steps
+    from favorite_recipes f
+    join recipes r on r.id = f.recipe_id
+    where f.user_id = ${userId}
+    order by f.created_at desc
+  `
+}
+
+export async function saveFavoriteRecipe({ userId, recipeId, title, imageUrl, note = '' }) {
+  const rows = await sql`
+    insert into favorite_recipes (user_id, recipe_id, title, image_url, note)
+    values (${userId}, ${recipeId}, ${title}, ${imageUrl || null}, ${note})
+    on conflict (user_id, recipe_id)
+    do update set
+      title = excluded.title,
+      image_url = excluded.image_url,
+      note = excluded.note,
+      created_at = now()
+    returning *
+  `
+
+  return rows[0]
+}
+
+export async function updateFavoriteNote({ userId, recipeId, note }) {
+  const rows = await sql`
+    update favorite_recipes
+    set note = ${note ?? ''}
+    where user_id = ${userId} and recipe_id = ${recipeId}
+    returning *
+  `
+
+  return rows[0] || null
+}
+
+export async function removeFavoriteRecipe({ userId, recipeId }) {
+  const rows = await sql`
+    delete from favorite_recipes
+    where user_id = ${userId} and recipe_id = ${recipeId}
+    returning *
+  `
+
+  return rows[0] || null
+}
+
+export async function isFavoriteRecipe({ userId, recipeId }) {
+  const rows = await sql`
+    select 1
+    from favorite_recipes
+    where user_id = ${userId} and recipe_id = ${recipeId}
+    limit 1
+  `
+
+  return rows.length > 0
 }

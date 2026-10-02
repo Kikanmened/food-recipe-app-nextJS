@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { authClient } from '@/lib/auth/client'
 import ThemeToggle from './ThemeToggle'
 
@@ -14,12 +14,20 @@ const links = [
 
 export default function Navbar() {
   const pathname = usePathname()
+  const router = useRouter()
   const { data: session } = authClient.useSession()
   const user = session?.user
 
   async function handleSignOut() {
-    await authClient.signOut()
-    window.location.href = '/sign-in'
+    try {
+      await authClient.signOut()
+    } finally {
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem('recipe-book-favorites')
+      }
+      router.push('/sign-in')
+      router.refresh()
+    }
   }
 
   return (
