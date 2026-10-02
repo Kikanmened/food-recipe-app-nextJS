@@ -8,7 +8,10 @@ export async function signInAction(prevState, formData) {
   const password = formData.get('password')
 
   try {
-    await auth.signIn.email({ email, password })
+    const { error } = await auth.signIn.email({ email, password })
+    if (error) {
+      return { error: error.message }
+    }
   } catch (error) {
     return { error: error.message }
   }
