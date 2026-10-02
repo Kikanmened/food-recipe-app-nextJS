@@ -13,10 +13,10 @@ export async function createRecipeAction(payload) {
   const title = payload.title?.trim()
   const ingredients = payload.ingredients
   const steps = payload.steps
-  const imageUrl = payload.imageUrl?.trim() || null
+  const imageUrl = payload.imageUrl?.trim()
 
-  if (!title || !ingredients?.length || !steps?.length) {
-    return { error: 'title, ingredients, and steps are required' }
+  if (!title || !ingredients?.length || !imageUrl || !steps?.length) {
+    return { error: 'title, ingredients, photo URL, and steps are required' }
   }
 
   try {

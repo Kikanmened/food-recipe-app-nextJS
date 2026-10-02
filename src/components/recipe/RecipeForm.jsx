@@ -44,6 +44,8 @@ const emptyForm = {
 export default function RecipeForm() {
   const queryClient = useQueryClient()
   const [form, setForm] = useState(emptyForm)
+  const [touched, setTouched] = useState({})
+  const [submitted, setSubmitted] = useState(false)
   const { data: session } = authClient.useSession()
   const user = session?.user
 
@@ -52,22 +54,42 @@ export default function RecipeForm() {
     onSuccess() {
       queryClient.invalidateQueries({ queryKey: ['recipes'] })
       setForm(emptyForm)
+      setTouched({})
+      setSubmitted(false)
     },
   })
+
+  const fieldErrors = {
+    title: !form.title.trim(),
+    ingredients: !parseIngredients(form.ingredients).length,
+    imageUrl: !form.imageUrl.trim(),
+    steps: !parseLines(form.steps).length,
+  }
+
+  function shouldShowError(name) {
+    return fieldErrors[name] && (submitted || touched[name])
+  }
 
   function handleChange(event) {
     const { name, value } = event.target
     setForm((current) => ({ ...current, [name]: value }))
   }
 
+  function handleBlur(event) {
+    const { name } = event.target
+    setTouched((current) => ({ ...current, [name]: true }))
+  }
+
   function handleSubmit(event) {
     event.preventDefault()
+    setSubmitted(true)
 
     const title = form.title.trim()
     const ingredients = parseIngredients(form.ingredients)
     const steps = parseLines(form.steps)
+    const imageUrl = form.imageUrl.trim()
 
-    if (!title || !ingredients.length || !steps.length) {
+    if (!title || !ingredients.length || !imageUrl || !steps.length) {
       return
     }
 
@@ -75,7 +97,7 @@ export default function RecipeForm() {
       title,
       ingredients,
       steps,
-      imageUrl: form.imageUrl.trim() || undefined,
+      imageUrl,
     })
   }
 
@@ -98,7 +120,7 @@ export default function RecipeForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="card bg-base-200 shadow-md">
+    <form onSubmit={handleSubmit} className="card bg-base-200 shadow-md" noValidate>
       <div className="card-body space-y-4">
         <h2 className="card-title">Add a recipe</h2>
 
@@ -108,7 +130,9 @@ export default function RecipeForm() {
             name="title"
             value={form.title}
             onChange={handleChange}
-            className="input input-bordered w-full"
+            onBlur={handleBlur}
+            className={`input input-bordered w-full ${shouldShowError('title') ? 'input-error' : ''}`}
+            aria-invalid={shouldShowError('title')}
             required
           />
         </label>
@@ -119,7 +143,9 @@ export default function RecipeForm() {
             name="ingredients"
             value={form.ingredients}
             onChange={handleChange}
-            className="textarea textarea-bordered min-h-28 w-full"
+            onBlur={handleBlur}
+            className={`textarea textarea-bordered min-h-28 w-full ${shouldShowError('ingredients') ? 'textarea-error' : ''}`}
+            aria-invalid={shouldShowError('ingredients')}
             placeholder={'spaghetti, 400g\neggs, 4 large'}
             required
           />
@@ -131,8 +157,11 @@ export default function RecipeForm() {
             name="imageUrl"
             value={form.imageUrl}
             onChange={handleChange}
-            className="input input-bordered w-full"
+            onBlur={handleBlur}
+            className={`input input-bordered w-full ${shouldShowError('imageUrl') ? 'input-error' : ''}`}
+            aria-invalid={shouldShowError('imageUrl')}
             placeholder="/images/spaghetti-carbonara.png or https://..."
+            required
           />
         </label>
 
@@ -142,7 +171,9 @@ export default function RecipeForm() {
             name="steps"
             value={form.steps}
             onChange={handleChange}
-            className="textarea textarea-bordered min-h-28 w-full"
+            onBlur={handleBlur}
+            className={`textarea textarea-bordered min-h-28 w-full ${shouldShowError('steps') ? 'textarea-error' : ''}`}
+            aria-invalid={shouldShowError('steps')}
             placeholder={'Boil the pasta.\nFry the guanciale.'}
             required
           />
