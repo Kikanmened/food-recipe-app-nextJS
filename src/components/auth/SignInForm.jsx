@@ -1,11 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { authClient } from '@/lib/auth/client'
 
 export default function SignInForm() {
-  const router = useRouter()
   const [error, setError] = useState('')
   const [isPending, setIsPending] = useState(false)
 
@@ -30,8 +28,7 @@ export default function SignInForm() {
       return
     }
 
-    router.push('/recipes')
-    router.refresh()
+    window.location.href = '/recipes'
   }
 
   return (

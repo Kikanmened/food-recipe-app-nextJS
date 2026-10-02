@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { signOutAction } from '@/app/actions/auth'
 import { authClient } from '@/lib/auth/client'
 import ThemeToggle from './ThemeToggle'
 
@@ -19,9 +18,8 @@ export default function Navbar() {
   const user = session?.user
 
   async function handleSignOut() {
-    await authClient.signOut().catch(() => {})
-    await signOutAction()
-    window.location.assign('/sign-in')
+    await authClient.signOut()
+    window.location.href = '/sign-in'
   }
 
   return (

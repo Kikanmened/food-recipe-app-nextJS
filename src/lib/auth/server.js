@@ -1,4 +1,3 @@
-import { headers } from 'next/headers'
 import { createNeonAuth } from '@neondatabase/auth/next/server'
 
 function createAuth() {
@@ -41,16 +40,6 @@ export const auth = new Proxy(
 )
 
 export async function getCurrentUser() {
-  const requestHeaders = await headers()
-  const authInstance = getAuth()
-
-  let result
-  try {
-    result = await authInstance.getSession({ headers: requestHeaders })
-  } catch {
-    result = await authInstance.getSession()
-  }
-
-  const session = result?.data ?? result
+  const { data: session } = await getAuth().getSession()
   return session?.user ?? null
 }
