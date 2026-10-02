@@ -8,10 +8,10 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  const { auth } = await import('@/lib/auth/server')
-  const { data: session } = await auth.getSession()
+  const { getCurrentUser } = await import('@/lib/auth/server')
+  const user = await getCurrentUser()
 
-  if (!session?.user) {
+  if (!user?.id) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -29,7 +29,7 @@ export async function POST(request) {
   }
 
   const recipe = await createRecipe({
-    userId: session.user.id,
+    userId: user.id,
     title,
     ingredients,
     steps,

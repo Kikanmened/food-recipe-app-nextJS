@@ -1,7 +1,9 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui'
 import { useFavorites } from '@/context'
+import { authClient } from '@/lib/auth/client'
 import { formatIngredients } from '@/utils'
 import RecipeImage from './RecipeImage'
 
@@ -21,10 +23,26 @@ function ingredientLabel(item) {
 }
 
 export default function RecipeDetails({ recipe }) {
+  const router = useRouter()
+  const { data: session } = authClient.useSession()
   const { isFavorite, addFavorite, removeFavorite } = useFavorites()
   const saved = isFavorite(recipe.id)
   const ingredients = formatIngredients(recipe.ingredients)
   const steps = Array.isArray(recipe.steps) ? recipe.steps : []
+
+  function handleFavorite() {
+    if (!session?.user) {
+      router.push('/sign-in')
+      return
+    }
+
+    if (saved) {
+      removeFavorite(recipe.id)
+      return
+    }
+
+    addFavorite(recipe)
+  }
 
   return (
     <article className="space-y-8">
@@ -32,9 +50,13 @@ export default function RecipeDetails({ recipe }) {
         <h1 className="text-3xl font-bold">{recipe.title}</h1>
         <Button
           variant={saved ? 'outline' : 'primary'}
-          onClick={() => (saved ? removeFavorite(recipe.id) : addFavorite(recipe))}
+          onClick={handleFavorite}
         >
-          {saved ? 'Remove favorite' : 'Save favorite'}
+          {!session?.user
+            ? 'Sign in to save'
+            : saved
+              ? 'Remove favorite'
+              : 'Save favorite'}
         </Button>
       </div>
 

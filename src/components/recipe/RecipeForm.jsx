@@ -1,7 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { createRecipeAction } from '@/app/actions/recipes'
+import { authClient } from '@/lib/auth/client'
 import { Button } from '@/components/ui'
 
 function parseLines(text) {
@@ -22,22 +25,13 @@ function parseIngredients(text) {
 }
 
 async function createRecipeRequest(payload) {
-  const response = await fetch('/api/recipes', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
+  const result = await createRecipeAction(payload)
 
-  const data = await response.json().catch(() => ({}))
-
-  if (!response.ok) {
-    if (response.status === 401) {
-      throw new Error('Sign in to add a recipe.')
-    }
-    throw new Error(data.error || `Request failed: ${response.status}`)
+  if (result.error) {
+    throw new Error(result.error)
   }
 
-  return data
+  return result.recipe
 }
 
 const emptyForm = {
@@ -50,6 +44,8 @@ const emptyForm = {
 export default function RecipeForm() {
   const queryClient = useQueryClient()
   const [form, setForm] = useState(emptyForm)
+  const { data: session } = authClient.useSession()
+  const user = session?.user
 
   const mutation = useMutation({
     mutationFn: createRecipeRequest,
@@ -81,6 +77,24 @@ export default function RecipeForm() {
       steps,
       imageUrl: form.imageUrl.trim() || undefined,
     })
+  }
+
+  if (!user) {
+    return (
+      <div className="card bg-base-200 shadow-md">
+        <div className="card-body">
+          <h2 className="card-title">Add a recipe</h2>
+          <p className="text-base-content/70">
+            Sign in to add a recipe to the cookbook.
+          </p>
+          <div className="card-actions">
+            <Link href="/sign-in" className="btn btn-primary">
+              Sign in
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
