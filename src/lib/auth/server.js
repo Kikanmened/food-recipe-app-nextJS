@@ -1,4 +1,6 @@
 import { createNeonAuth } from '@neondatabase/auth/next/server'
+import { parseSetCookies } from '@neondatabase/auth/server'
+import { cookies, headers } from 'next/headers'
 
 function createAuth() {
   const secret = process.env.NEON_AUTH_COOKIE_SECRET
@@ -40,6 +42,31 @@ export const auth = new Proxy(
 )
 
 export async function getCurrentUser() {
-  const { data: session } = await getAuth().getSession()
+  const requestHeaders = await headers()
+  const protocol = requestHeaders.get('x-forwarded-proto') === 'http' ? 'http' : 'https'
+  const host = requestHeaders.get('host') || 'localhost'
+  const request = new Request(`${protocol}://${host}/api/auth/get-session`, {
+    method: 'GET',
+    headers: requestHeaders,
+  })
+
+  // Use the same verified session and cookie refresh path as authClient.useSession().
+  const response = await getAuth().handler().GET(request, {
+    params: Promise.resolve({ path: ['get-session'] }),
+  })
+
+  const cookieStore = await cookies()
+  for (const header of response.headers.getSetCookie()) {
+    for (const cookie of parseSetCookies(header)) {
+      cookieStore.set(cookie)
+    }
+  }
+
+  if (response.status === 401) return null
+  if (!response.ok) {
+    throw new Error('Unable to verify your session. Please try again.')
+  }
+
+  const session = await response.json()
   return session?.user ?? null
 }

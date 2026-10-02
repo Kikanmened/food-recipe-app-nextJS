@@ -1,4 +1,5 @@
 import { createRecipe, getAllRecipes } from '@/provider/queries'
+import { normalizeRecipeInput, RECIPE_REQUIRED_FIELDS_ERROR } from '@/utils/recipes'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,24 +17,17 @@ export async function POST(request) {
   }
 
   const body = await request.json()
-  const title = body.title?.trim()
-  const ingredients = body.ingredients
-  const steps = body.steps
-  const imageUrl = body.imageUrl?.trim()
-
-  if (!title || !ingredients?.length || !imageUrl || !steps?.length) {
+  const input = normalizeRecipeInput(body)
+  if (!input) {
     return Response.json(
-      { error: 'title, ingredients, photo URL, and steps are required' },
+      { error: RECIPE_REQUIRED_FIELDS_ERROR },
       { status: 400 }
     )
   }
 
   const recipe = await createRecipe({
     userId: user.id,
-    title,
-    ingredients,
-    steps,
-    imageUrl,
+    ...input,
   })
 
   return Response.json(recipe, { status: 201 })

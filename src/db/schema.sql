@@ -5,6 +5,8 @@ create table recipes (
     ingredients jsonb not null,
     steps       text[] not null,
     image_url   text,
+    category    text not null default 'other' constraint recipes_category_check
+                check (category in ('pasta', 'chicken', 'vegetarian', 'breakfast', 'other')),
     created_at  timestamptz default now()
 );
 

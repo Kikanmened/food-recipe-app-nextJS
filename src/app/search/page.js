@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import RecipeFilters, { applyRecipeFilters } from '@/components/recipe/RecipeFilters'
 import { RecipeList } from '@/components/recipe'
@@ -16,7 +16,9 @@ const emptyFilters = {
 
 function SearchPageContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const query = (searchParams.get('q') || '').trim()
+  const category = searchParams.get('category') || ''
   const [filters, setFilters] = useState(emptyFilters)
 
   const { data: recipes = [], isPending, isError, error, refetch } = useQuery({
@@ -24,14 +26,25 @@ function SearchPageContent() {
     queryFn: () => handleFetch('/api/recipes'),
   })
 
-  const filtered = applyRecipeFilters(recipes, { query, ...filters })
+  const filtered = applyRecipeFilters(recipes, { ...filters, query, category })
+
+  function handleFiltersChange(nextFilters) {
+    const { category: nextCategory, ...localFilters } = nextFilters
+    setFilters(localFilters)
+    if (nextCategory !== category) {
+      const params = new URLSearchParams(searchParams.toString())
+      if (nextCategory) params.set('category', nextCategory)
+      else params.delete('category')
+      router.replace(params.size ? `/search?${params}` : '/search', { scroll: false })
+    }
+  }
 
   return (
     <section className="mx-auto max-w-6xl space-y-6 px-4 py-12">
       <div className="space-y-4">
         <h1 className="text-3xl font-bold">Search</h1>
         <SearchBar />
-        <RecipeFilters filters={filters} onChange={setFilters} />
+        <RecipeFilters filters={{ ...filters, category }} onChange={handleFiltersChange} />
       </div>
 
       {isPending ? (

@@ -1,11 +1,16 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui'
+import { useRef, useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { deleteRecipeAction } from '@/app/actions/recipes'
 import { useFavorites } from '@/context'
 import { authClient } from '@/lib/auth/client'
 import { formatIngredients } from '@/utils'
 import RecipeImage from './RecipeImage'
+import RecipeForm from './RecipeForm'
+import { recipeCategoryLabel } from '@/utils/recipe-categories'
+import FavoriteButton from './FavoriteButton'
 
 function ingredientLabel(item) {
   if (item == null) return ''
@@ -24,43 +29,72 @@ function ingredientLabel(item) {
 
 export default function RecipeDetails({ recipe }) {
   const router = useRouter()
+  const queryClient = useQueryClient()
+  const [isEditing, setIsEditing] = useState(false)
+  const [message, setMessage] = useState('')
+  const deleteDialog = useRef(null)
+  const editButton = useRef(null)
   const { data: session } = authClient.useSession()
-  const { isFavorite, addFavorite, removeFavorite } = useFavorites()
-  const saved = isFavorite(recipe.id)
+  const { onRecipeUpdated, onRecipeDeleted } = useFavorites()
+  const isOwner = Boolean(session?.user?.id && String(session.user.id) === String(recipe.user_id))
   const ingredients = formatIngredients(recipe.ingredients)
   const steps = Array.isArray(recipe.steps) ? recipe.steps : []
 
-  function handleFavorite() {
-    if (!session?.user) {
-      router.push('/sign-in')
-      return
-    }
+  const deletion = useMutation({
+    async mutationFn() {
+      const result = await deleteRecipeAction(recipe.id)
+      if (result.error) throw new Error(result.error)
+      return result
+    },
+    onSuccess() {
+      onRecipeDeleted(recipe.id)
+      queryClient.setQueryData(['recipes'], (current) => Array.isArray(current)
+        ? current.filter((item) => item.id !== recipe.id)
+        : current)
+      queryClient.invalidateQueries({ queryKey: ['recipes'] })
+      deleteDialog.current?.close()
+      router.replace('/recipes')
+      router.refresh()
+    },
+  })
 
-    if (saved) {
-      removeFavorite(recipe.id)
-      return
+  function finishEditing(updatedRecipe) {
+    setIsEditing(false)
+    editButton.current?.focus()
+    if (updatedRecipe) {
+      onRecipeUpdated(updatedRecipe)
+      setMessage('Recipe updated.')
+      router.refresh()
     }
-
-    addFavorite(recipe)
   }
 
   return (
     <article className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <h1 className="text-3xl font-bold">{recipe.title}</h1>
-        <Button
-          variant={saved ? 'outline' : 'primary'}
-          onClick={handleFavorite}
-        >
-          {!session?.user
-            ? 'Sign in to save'
-            : saved
-              ? 'Remove favorite'
-              : 'Save favorite'}
-        </Button>
+        <h1 className="min-w-0 break-words text-3xl font-bold">{recipe.title}</h1>
+        <FavoriteButton key={recipe.id} recipe={recipe} />
       </div>
 
-      <RecipeImage recipe={recipe} className="h-72 w-full rounded-2xl object-cover" />
+      <span className="badge badge-outline">{recipeCategoryLabel(recipe.category)}</span>
+
+      {isOwner ? (
+        <div className="flex flex-wrap gap-3">
+          <button ref={editButton} type="button" className="btn btn-outline" aria-expanded={isEditing} disabled={deletion.isPending} onClick={() => { setMessage(''); setIsEditing(true) }}>
+            Edit recipe
+          </button>
+          <button type="button" className="btn btn-outline btn-error" disabled={isEditing || deletion.isPending} onClick={() => { deletion.reset(); deleteDialog.current?.showModal() }}>
+            Delete recipe
+          </button>
+        </div>
+      ) : null}
+
+      {message ? <p role="status" className="text-success">{message}</p> : null}
+
+      {isOwner && isEditing ? (
+        <RecipeForm key={recipe.id} recipe={recipe} onSaved={finishEditing} onCancel={() => finishEditing()} />
+      ) : null}
+
+      <RecipeImage key={recipe.image_url} recipe={recipe} className="h-72 w-full rounded-2xl object-cover" />
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Ingredients</h2>
@@ -70,6 +104,22 @@ export default function RecipeDetails({ recipe }) {
           ))}
         </ul>
       </section>
+
+      {isOwner ? (
+        <dialog ref={deleteDialog} className="modal" aria-labelledby="delete-recipe-title" onCancel={(event) => { if (deletion.isPending) event.preventDefault() }}>
+          <div className="modal-box max-w-md rounded-lg">
+            <h2 id="delete-recipe-title" className="text-xl font-semibold">Delete recipe?</h2>
+            <p className="mt-3 break-words">Delete &quot;{recipe.title}&quot;? This cannot be undone and will remove it from favorites.</p>
+            {deletion.isError ? <p role="alert" className="mt-3 text-error">{deletion.error.message}</p> : null}
+            <div className="modal-action flex-wrap">
+              <button type="button" className="btn btn-outline" autoFocus disabled={deletion.isPending} onClick={() => deleteDialog.current?.close()}>Cancel</button>
+              <button type="button" className="btn btn-error min-w-36" disabled={deletion.isPending} onClick={() => deletion.mutate()}>
+                {deletion.isPending ? 'Deleting...' : 'Delete recipe'}
+              </button>
+            </div>
+          </div>
+        </dialog>
+      ) : null}
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Steps</h2>

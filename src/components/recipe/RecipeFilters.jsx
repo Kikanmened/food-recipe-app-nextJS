@@ -1,54 +1,7 @@
 'use client'
 
-import { formatIngredients } from '@/utils'
-
-function ingredientText(item) {
-  if (item == null) return ''
-  if (typeof item === 'string') return item
-  if (Array.isArray(item)) return item.join(' ')
-  if (typeof item === 'object') {
-    return [item.amount, item.name, item.ingredient, item.quantity]
-      .filter(Boolean)
-      .join(' ')
-  }
-  return String(item)
-}
-
-export function applyRecipeFilters(recipes, { query = '', sort = 'newest', minIngredients = '', ingredient = '' } = {}) {
-  const titleQuery = query.trim().toLowerCase()
-  const ingredientQuery = ingredient.trim().toLowerCase()
-  const minimum = Number(minIngredients) || 0
-
-  let result = recipes.filter((recipe) => {
-    if (titleQuery && !recipe.title.toLowerCase().includes(titleQuery)) {
-      return false
-    }
-
-    const ingredients = formatIngredients(recipe.ingredients)
-    if (minimum && ingredients.length < minimum) {
-      return false
-    }
-
-    if (ingredientQuery) {
-      const matchesIngredient = ingredients.some((item) =>
-        ingredientText(item).toLowerCase().includes(ingredientQuery)
-      )
-      if (!matchesIngredient) return false
-    }
-
-    return true
-  })
-
-  if (sort === 'title') {
-    result = [...result].sort((a, b) => a.title.localeCompare(b.title))
-  } else if (sort === 'ingredients') {
-    result = [...result].sort(
-      (a, b) => formatIngredients(a.ingredients).length - formatIngredients(b.ingredients).length
-    )
-  }
-
-  return result
-}
+import { RECIPE_CATEGORIES } from '@/utils/recipe-categories'
+export { applyRecipeFilters } from '@/utils/recipe-filters'
 
 export default function RecipeFilters({ filters, onChange }) {
   function handleChange(event) {
@@ -57,7 +10,16 @@ export default function RecipeFilters({ filters, onChange }) {
   }
 
   return (
-    <div className="grid gap-3 sm:grid-cols-3">
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <label className="form-control w-full">
+        <span className="label-text mb-1">Category</span>
+        <select name="category" value={filters.category || ''} onChange={handleChange} className="select select-bordered w-full">
+          <option value="">All categories</option>
+          {RECIPE_CATEGORIES.map((category) => (
+            <option key={category.value} value={category.value}>{category.label}</option>
+          ))}
+        </select>
+      </label>
       <label className="form-control w-full">
         <span className="label-text mb-1">Sort</span>
         <select

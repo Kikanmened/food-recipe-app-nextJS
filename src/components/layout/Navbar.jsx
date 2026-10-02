@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { authClient } from '@/lib/auth/client'
+import { useState } from 'react'
+import { usePathname } from 'next/navigation'
+import { authClient, signOutAndRedirect } from '@/lib/auth/client'
 import ThemeToggle from './ThemeToggle'
 
 const links = [
@@ -14,19 +15,20 @@ const links = [
 
 export default function Navbar() {
   const pathname = usePathname()
-  const router = useRouter()
+  const [isSigningOut, setIsSigningOut] = useState(false)
+  const [signOutError, setSignOutError] = useState('')
   const { data: session } = authClient.useSession()
   const user = session?.user
 
   async function handleSignOut() {
+    if (isSigningOut) return
+    setIsSigningOut(true)
+    setSignOutError('')
     try {
-      await authClient.signOut()
-    } finally {
-      if (typeof window !== 'undefined') {
-        window.localStorage.removeItem('recipe-book-favorites')
-      }
-      router.push('/sign-in')
-      router.refresh()
+      await signOutAndRedirect()
+    } catch {
+      setSignOutError('Unable to sign out. Please try again.')
+      setIsSigningOut(false)
     }
   }
 
@@ -71,9 +73,16 @@ export default function Navbar() {
             <span className="hidden max-w-36 truncate text-sm sm:inline">
               {user.name || user.email}
             </span>
-            <button type="button" onClick={handleSignOut} className="btn btn-outline">
-              Sign out
-            </button>
+            <div className="relative">
+              <button type="button" onClick={handleSignOut} disabled={isSigningOut} aria-busy={isSigningOut} aria-label="Sign out" className="btn btn-outline w-24">
+                {isSigningOut ? <span aria-hidden="true" className="loading loading-spinner loading-sm" /> : 'Sign out'}
+              </button>
+              {signOutError ? (
+                <p role="alert" className="absolute right-0 top-full z-20 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded bg-base-100 p-3 text-sm text-error shadow-md">
+                  {signOutError}
+                </p>
+              ) : null}
+            </div>
           </>
         ) : (
           <>

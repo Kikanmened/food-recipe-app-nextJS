@@ -1,113 +1,90 @@
 import { getCurrentUser } from '@/lib/auth/server'
 import {
+  getRecipeById,
   getFavoriteRecipesForUser,
-  isFavoriteRecipe,
   saveFavoriteRecipe,
   removeFavoriteRecipe,
   updateFavoriteNote,
 } from '@/provider/queries'
+import { isRecipeId } from '@/utils/recipes'
+import { DUPLICATE_FAVORITE_ERROR, normalizeFavorite } from '@/utils/favorites'
 
 export const dynamic = 'force-dynamic'
 
-function normalizeFavoriteEntry(row) {
-  return {
-    id: String(row.recipe_id ?? row.id),
-    title: row.title ?? '',
-    image_url: row.image_url ?? '',
-    note: row.note ?? '',
-    created_at: row.created_at ?? null,
-  }
-}
-
 export async function GET() {
-  const user = await getCurrentUser()
+  try {
+    const user = await getCurrentUser()
+    if (!user?.id) return Response.json({ error: 'Sign in to view your favorites.' }, { status: 401 })
 
-  if (!user?.id) {
-    return Response.json([], { status: 200 })
+    const items = await getFavoriteRecipesForUser(user.id)
+    return Response.json(items.map(normalizeFavorite))
+  } catch {
+    return Response.json({ error: 'Unable to load your favorites. Please try again.' }, { status: 500 })
   }
-
-  const items = await getFavoriteRecipesForUser(user.id)
-  return Response.json(items.map(normalizeFavoriteEntry))
 }
 
 export async function POST(request) {
-  const user = await getCurrentUser()
+  try {
+    const user = await getCurrentUser()
+    if (!user?.id) return Response.json({ error: 'Sign in to save favorites.' }, { status: 401 })
 
-  if (!user?.id) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 })
+    const body = await request.json().catch(() => null)
+    const recipeId = body?.recipeId ?? body?.id
+    if (!isRecipeId(recipeId) || (body?.note !== undefined && typeof body.note !== 'string')) {
+      return Response.json({ error: 'A valid recipe and note are required.' }, { status: 400 })
+    }
+
+    const recipe = await getRecipeById(recipeId)
+    if (!recipe) return Response.json({ error: 'Recipe not found.' }, { status: 404 })
+
+    const favorite = await saveFavoriteRecipe({
+      userId: user.id,
+      recipeId,
+      title: recipe.title,
+      imageUrl: recipe.image_url,
+      note: body.note ?? '',
+    })
+    if (!favorite) return Response.json({ error: DUPLICATE_FAVORITE_ERROR }, { status: 409 })
+
+    return Response.json(normalizeFavorite(favorite), { status: 201 })
+  } catch (error) {
+    if (error.code === '23503') return Response.json({ error: 'Recipe not found.' }, { status: 404 })
+    return Response.json({ error: 'Unable to save this favorite. Please try again.' }, { status: 500 })
   }
-
-  const body = await request.json()
-  const recipeId = body.recipeId ?? body.id
-  const title = (body.title ?? '').trim()
-  const imageUrl = body.imageUrl ?? body.image_url ?? ''
-  const note = body.note ?? ''
-
-  if (!recipeId || !title) {
-    return Response.json({ error: 'Recipe selection is required.' }, { status: 400 })
-  }
-
-  const existing = await isFavoriteRecipe({ userId: user.id, recipeId })
-
-  if (existing) {
-    const favorite = await updateFavoriteNote({ userId: user.id, recipeId, note })
-    return Response.json(normalizeFavoriteEntry({ ...favorite, recipe_id: recipeId, title, image_url: imageUrl }))
-  }
-
-  const favorite = await saveFavoriteRecipe({
-    userId: user.id,
-    recipeId,
-    title,
-    imageUrl,
-    note,
-  })
-
-  return Response.json(normalizeFavoriteEntry({ ...favorite, recipe_id: recipeId, title, image_url: imageUrl }))
 }
 
 export async function PUT(request) {
-  const user = await getCurrentUser()
+  try {
+    const user = await getCurrentUser()
+    if (!user?.id) return Response.json({ error: 'Sign in to update favorites.' }, { status: 401 })
 
-  if (!user?.id) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 })
+    const body = await request.json().catch(() => null)
+    const recipeId = body?.recipeId ?? body?.id
+    if (!isRecipeId(recipeId) || typeof body?.note !== 'string') {
+      return Response.json({ error: 'A valid recipe and note are required.' }, { status: 400 })
+    }
+
+    const favorite = await updateFavoriteNote({ userId: user.id, recipeId, note: body.note })
+    if (!favorite) return Response.json({ error: 'Favorite not found.' }, { status: 404 })
+    return Response.json(normalizeFavorite(favorite))
+  } catch {
+    return Response.json({ error: 'Unable to save your note. Please try again.' }, { status: 500 })
   }
-
-  const body = await request.json()
-  const recipeId = body.recipeId ?? body.id
-  const note = body.note ?? ''
-
-  if (!recipeId) {
-    return Response.json({ error: 'Recipe selection is required.' }, { status: 400 })
-  }
-
-  const favorite = await updateFavoriteNote({ userId: user.id, recipeId, note })
-
-  if (!favorite) {
-    return Response.json({ error: 'Favorite not found.' }, { status: 404 })
-  }
-
-  return Response.json(normalizeFavoriteEntry({ ...favorite, recipe_id: recipeId }))
 }
 
 export async function DELETE(request) {
-  const user = await getCurrentUser()
+  try {
+    const user = await getCurrentUser()
+    if (!user?.id) return Response.json({ error: 'Sign in to remove favorites.' }, { status: 401 })
 
-  if (!user?.id) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 })
+    const body = await request.json().catch(() => null)
+    const recipeId = body?.recipeId ?? body?.id
+    if (!isRecipeId(recipeId)) return Response.json({ error: 'A valid recipe is required.' }, { status: 400 })
+
+    const favorite = await removeFavoriteRecipe({ userId: user.id, recipeId })
+    if (!favorite) return Response.json({ error: 'Favorite not found.' }, { status: 404 })
+    return Response.json({ success: true, recipeId })
+  } catch {
+    return Response.json({ error: 'Unable to remove this favorite. Please try again.' }, { status: 500 })
   }
-
-  const body = await request.json()
-  const recipeId = body.recipeId ?? body.id
-
-  if (!recipeId) {
-    return Response.json({ error: 'Recipe selection is required.' }, { status: 400 })
-  }
-
-  const favorite = await removeFavoriteRecipe({ userId: user.id, recipeId })
-
-  if (!favorite) {
-    return Response.json({ error: 'Favorite not found.' }, { status: 404 })
-  }
-
-  return Response.json({ success: true, recipeId })
 }

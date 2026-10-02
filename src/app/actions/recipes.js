@@ -1,34 +1,65 @@
 'use server'
 
 import { getCurrentUser } from '@/lib/auth/server'
-import { createRecipe } from '@/provider/queries'
+import { revalidatePath } from 'next/cache'
+import { createRecipe, updateRecipe, deleteRecipe } from '@/provider/queries'
+import { isRecipeId, normalizeRecipeInput, RECIPE_REQUIRED_FIELDS_ERROR } from '@/utils/recipes'
 
 export async function createRecipeAction(payload) {
-  const user = await getCurrentUser()
-
-  if (!user?.id) {
-    return { error: 'Sign in to add a recipe.' }
-  }
-
-  const title = payload.title?.trim()
-  const ingredients = payload.ingredients
-  const steps = payload.steps
-  const imageUrl = payload.imageUrl?.trim()
-
-  if (!title || !ingredients?.length || !imageUrl || !steps?.length) {
-    return { error: 'title, ingredients, photo URL, and steps are required' }
-  }
-
   try {
+    const user = await getCurrentUser()
+
+    if (!user?.id) {
+      return { error: 'Sign in to add a recipe.' }
+    }
+
+    const input = normalizeRecipeInput(payload)
+    if (!input) {
+      return { error: RECIPE_REQUIRED_FIELDS_ERROR }
+    }
+
     const recipe = await createRecipe({
       userId: user.id,
-      title,
-      ingredients,
-      steps,
-      imageUrl,
+      ...input,
     })
     return { recipe }
   } catch (error) {
     return { error: error.message }
+  }
+}
+
+export async function updateRecipeAction(id, payload) {
+  try {
+    const user = await getCurrentUser()
+    if (!user?.id) return { error: 'Sign in to edit a recipe.' }
+    if (!isRecipeId(id)) return { error: 'Recipe not found or you do not have permission to edit it.' }
+
+    const input = normalizeRecipeInput(payload)
+    if (!input) return { error: RECIPE_REQUIRED_FIELDS_ERROR }
+
+    const recipe = await updateRecipe({ ...input, id, userId: user.id })
+    if (!recipe) return { error: 'Recipe not found or you do not have permission to edit it.' }
+
+    revalidatePath(`/recipes/${id}`)
+    revalidatePath('/recipes')
+    return { recipe }
+  } catch {
+    return { error: 'Unable to update the recipe. Please try again.' }
+  }
+}
+
+export async function deleteRecipeAction(id) {
+  try {
+    const user = await getCurrentUser()
+    if (!user?.id) return { error: 'Sign in to delete a recipe.' }
+    if (!isRecipeId(id)) return { error: 'Recipe not found or you do not have permission to delete it.' }
+
+    const recipe = await deleteRecipe({ id, userId: user.id })
+    if (!recipe) return { error: 'Recipe not found or you do not have permission to delete it.' }
+
+    revalidatePath('/recipes')
+    return { success: true }
+  } catch {
+    return { error: 'Unable to delete the recipe. Please try again.' }
   }
 }
