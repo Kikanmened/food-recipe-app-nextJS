@@ -19,11 +19,11 @@ export async function POST(request) {
   const title = body.title?.trim()
   const ingredients = body.ingredients
   const steps = body.steps
-  const imageUrl = body.imageUrl?.trim() || null
+  const imageUrl = body.imageUrl?.trim()
 
-  if (!title || !ingredients || !steps) {
+  if (!title || !ingredients?.length || !imageUrl || !steps?.length) {
     return Response.json(
-      { error: 'title, ingredients, and steps are required' },
+      { error: 'title, ingredients, photo URL, and steps are required' },
       { status: 400 }
     )
   }
