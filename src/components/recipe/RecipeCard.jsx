@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { formatIngredients } from '@/utils'
 import RecipeImage from './RecipeImage'
+import { recipeCategoryLabel } from '@/utils/recipe-categories'
 
 export default function RecipeCard({ recipe }) {
   const ingredients = formatIngredients(recipe.ingredients)
@@ -14,6 +15,7 @@ export default function RecipeCard({ recipe }) {
       <div className="card-body">
         <h2 className="card-title">{recipe.title}</h2>
         <div className="flex flex-wrap gap-2">
+          <span className="badge badge-outline">{recipeCategoryLabel(recipe.category)}</span>
           <span className="badge badge-outline">{ingredients.length} ingredients</span>
           <span className="badge badge-outline">{stepCount} steps</span>
         </div>

@@ -31,15 +31,35 @@ export async function searchRecipes(query) {
 /**
  * Insert a new recipe and return it.
  */
-export async function createRecipe({ userId, title, ingredients, steps, imageUrl }) {
+export async function createRecipe({ userId, title, ingredients, steps, imageUrl, category }) {
   const ingredientsJson = JSON.stringify(ingredients)
 
   const rows = await sql`
-    insert into recipes (user_id, title, ingredients, steps, image_url)
-    values (${userId}, ${title}, ${ingredientsJson}::jsonb, ${steps}, ${imageUrl || null})
+    insert into recipes (user_id, title, ingredients, steps, image_url, category)
+    values (${userId}, ${title}, ${ingredientsJson}::jsonb, ${steps}, ${imageUrl || null}, ${category})
     returning *
   `
   return rows[0]
+}
+
+export async function updateRecipe({ id, userId, title, ingredients, steps, imageUrl, category }) {
+  const rows = await sql`
+    update recipes
+    set title = ${title}, ingredients = ${JSON.stringify(ingredients)}::jsonb,
+        steps = ${steps}, image_url = ${imageUrl}, category = ${category}
+    where id = ${id} and user_id = ${userId}
+    returning *
+  `
+  return rows[0] || null
+}
+
+export async function deleteRecipe({ id, userId }) {
+  const rows = await sql`
+    delete from recipes
+    where id = ${id} and user_id = ${userId}
+    returning id
+  `
+  return rows[0] || null
 }
 
 export async function getFavoriteRecipesForUser(userId) {
@@ -64,24 +84,23 @@ export async function saveFavoriteRecipe({ userId, recipeId, title, imageUrl, no
   const rows = await sql`
     insert into favorite_recipes (user_id, recipe_id, title, image_url, note)
     values (${userId}, ${recipeId}, ${title}, ${imageUrl || null}, ${note})
-    on conflict (user_id, recipe_id)
-    do update set
-      title = excluded.title,
-      image_url = excluded.image_url,
-      note = excluded.note,
-      created_at = now()
+    on conflict (user_id, recipe_id) do nothing
     returning *
   `
 
-  return rows[0]
+  return rows[0] || null
 }
 
 export async function updateFavoriteNote({ userId, recipeId, note }) {
   const rows = await sql`
-    update favorite_recipes
-    set note = ${note ?? ''}
-    where user_id = ${userId} and recipe_id = ${recipeId}
-    returning *
+    with updated as (
+      update favorite_recipes
+      set note = ${note ?? ''}
+      where user_id = ${userId} and recipe_id = ${recipeId}
+      returning recipe_id, note, created_at
+    )
+    select updated.*, r.title, r.image_url
+    from updated join recipes r on r.id = updated.recipe_id
   `
 
   return rows[0] || null

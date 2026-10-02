@@ -1,140 +1,82 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useRef } from 'react'
+import { useMutation, useMutationState, useQuery, useQueryClient } from '@tanstack/react-query'
 import { authClient } from '@/lib/auth/client'
+import { DUPLICATE_FAVORITE_ERROR, normalizeFavorite, normalizeFavoriteList, requestFavorites } from '@/utils/favorites'
 import { FavoritesContext } from './FavoritesContext'
 
-function toFavoriteItem(raw) {
-  return {
-    id: String(raw.recipe_id ?? raw.id ?? raw.recipeId),
-    title: raw.title ?? '',
-    image_url: raw.image_url ?? raw.imageUrl ?? '',
-    note: raw.note ?? '',
-    savedAt: raw.saved_at ?? raw.savedAt ?? raw.created_at ?? raw.createdAt ?? new Date().toISOString(),
-  }
-}
-
 export default function FavoritesState({ children }) {
-  const { data: session } = authClient.useSession()
-  const user = session?.user
-  const [favorites, setFavorites] = useState([])
-  const [isLoading, setIsLoading] = useState(false)
+  const { data: session, isPending: isSessionPending } = authClient.useSession()
+  const userId = session?.user?.id
+  const queryClient = useQueryClient()
+  const queryKey = ['favorites', userId]
+  const inFlight = useRef(new Set())
+  const query = useQuery({
+    queryKey,
+    enabled: Boolean(userId),
+    queryFn: async ({ signal }) => normalizeFavoriteList(await requestFavorites('GET', undefined, signal)),
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    retry: false,
+  })
+  const favorites = userId ? query.data || [] : []
 
-  useEffect(() => {
-    if (!user?.id) {
-      setFavorites([])
-      return
+  const mutation = useMutation({
+    mutationKey: queryKey,
+    mutationFn: ({ method, recipeId, note }) => requestFavorites(method, { recipeId, ...(note !== undefined ? { note } : {}) }),
+    onMutate: ({ accountId }) => queryClient.cancelQueries({ queryKey: ['favorites', accountId] }),
+    onSuccess(result, { method, recipeId, accountId }) {
+      queryClient.setQueryData(['favorites', accountId], (current = []) => {
+        if (method === 'DELETE') return current.filter((favorite) => favorite.id !== String(recipeId))
+        const favorite = normalizeFavorite(result)
+        return method === 'POST'
+          ? [favorite, ...current.filter((item) => item.id !== favorite.id)]
+          : current.map((item) => item.id === favorite.id ? favorite : item)
+      })
+    },
+    onSettled: (_data, _error, { accountId }) => queryClient.invalidateQueries({ queryKey: ['favorites', accountId] }),
+  })
+  const pendingIds = useMutationState({
+    filters: { mutationKey: queryKey, status: 'pending' },
+    select: (pending) => String(pending.state.variables.recipeId),
+  })
+
+  async function mutateFavorite(method, recipeId, note) {
+    if (!userId) throw new Error('Sign in to manage your favorites.')
+    const key = userId + ':' + recipeId
+    const current = queryClient.getQueryData(queryKey) || []
+    if (method === 'POST' && current.some((favorite) => favorite.id === String(recipeId))) {
+      throw new Error(DUPLICATE_FAVORITE_ERROR)
     }
-
-    let isActive = true
-
-    async function loadFavorites() {
-      setIsLoading(true)
-      try {
-        const response = await fetch('/api/favorites', { cache: 'no-store' })
-        const payload = await response.json()
-
-        if (!isActive) return
-
-        if (!response.ok) {
-          setFavorites([])
-          return
-        }
-
-        setFavorites(Array.isArray(payload) ? payload.map(toFavoriteItem) : [])
-      } catch {
-        if (isActive) {
-          setFavorites([])
-        }
-      } finally {
-        if (isActive) {
-          setIsLoading(false)
-        }
-      }
+    if (inFlight.current.has(key)) throw new Error('This favorite is already being updated.')
+    inFlight.current.add(key)
+    try {
+      return await mutation.mutateAsync({ method, recipeId, note, accountId: userId })
+    } finally {
+      inFlight.current.delete(key)
     }
+  }
 
-    loadFavorites()
-
-    return () => {
-      isActive = false
-    }
-  }, [user?.id])
-
-  const value = useMemo(() => ({
+  const value = {
     favorites,
-    isLoading,
-    isFavorite(recipeId) {
-      return favorites.some((favorite) => favorite.id === String(recipeId))
+    isLoading: Boolean(isSessionPending || (userId && query.isPending)),
+    error: userId ? query.error : null,
+    refetch: query.refetch,
+    isFavorite: (recipeId) => favorites.some((favorite) => favorite.id === String(recipeId)),
+    isFavoritePending: (recipeId) => pendingIds.includes(String(recipeId)),
+    addFavorite: (recipe) => mutateFavorite('POST', recipe.id),
+    updateNote: (recipeId, note) => mutateFavorite('PUT', recipeId, note),
+    removeFavorite: (recipeId) => mutateFavorite('DELETE', recipeId),
+    onRecipeUpdated(recipe) {
+      queryClient.setQueryData(queryKey, (current = []) => current.map((favorite) => favorite.id === String(recipe.id)
+        ? { ...favorite, title: recipe.title, image_url: recipe.image_url || '' }
+        : favorite))
     },
-    async addFavorite(recipe) {
-      if (!user?.id) return
-
-      const payload = {
-        recipeId: recipe.id,
-        title: recipe.title,
-        imageUrl: recipe.image_url || recipe.imageUrl || '',
-        note: recipe.note || '',
-      }
-
-      const response = await fetch('/api/favorites', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-
-      if (!response.ok) return
-
-      const body = await response.json()
-      const favorite = toFavoriteItem(body)
-
-      setFavorites((current) => {
-        if (current.some((item) => item.id === favorite.id)) {
-          return current
-        }
-
-        return [favorite, ...current]
-      })
+    onRecipeDeleted(recipeId) {
+      queryClient.setQueryData(queryKey, (current = []) => current.filter((favorite) => favorite.id !== String(recipeId)))
     },
-    async updateNote(recipeId, note) {
-      if (!user?.id) return
+  }
 
-      const response = await fetch('/api/favorites', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipeId, note }),
-      })
-
-      if (!response.ok) return
-
-      const updatedFavorite = await response.json()
-      setFavorites((current) =>
-        current.map((favorite) =>
-          favorite.id === String(recipeId)
-            ? toFavoriteItem(updatedFavorite)
-            : favorite
-        )
-      )
-    },
-    async removeFavorite(recipeId) {
-      if (!user?.id) return
-
-      const response = await fetch('/api/favorites', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipeId }),
-      })
-
-      if (!response.ok) return
-
-      setFavorites((current) =>
-        current.filter((favorite) => favorite.id !== String(recipeId))
-      )
-    },
-  }), [favorites, isLoading, user?.id])
-
-  return (
-    <FavoritesContext.Provider value={value}>
-      {children}
-    </FavoritesContext.Provider>
-  )
+  return <FavoritesContext.Provider value={value}>{children}</FavoritesContext.Provider>
 }

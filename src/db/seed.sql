@@ -8,12 +8,17 @@ create table if not exists recipes (
     ingredients jsonb not null,
     steps       text[] not null,
     image_url   text,
+    category    text not null default 'other' constraint recipes_category_check
+                check (category in ('pasta', 'chicken', 'vegetarian', 'breakfast', 'other')),
     created_at  timestamptz default now()
 );
 
 alter table recipes add column if not exists image_url text;
+alter table recipes add column if not exists category text not null default 'other'
+    constraint recipes_category_check
+    check (category in ('pasta', 'chicken', 'vegetarian', 'breakfast', 'other'));
 
-INSERT INTO recipes (user_id, title, ingredients, steps, image_url) VALUES
+INSERT INTO recipes (user_id, title, ingredients, steps, image_url, category) VALUES
 (
   'seed-user',
   'Spaghetti Carbonara',
@@ -33,7 +38,8 @@ INSERT INTO recipes (user_id, title, ingredients, steps, image_url) VALUES
     'Stir in the egg and cheese mixture, adding pasta water until creamy.',
     'Serve immediately with extra black pepper and cheese.'
   ],
-  '/images/spaghetti-carbonara.png'
+  '/images/spaghetti-carbonara.png',
+  'pasta'
 ),
 (
   'seed-user',
@@ -55,7 +61,8 @@ INSERT INTO recipes (user_id, title, ingredients, steps, image_url) VALUES
     'Return the chicken to the pan and add soy sauce.',
     'Toss everything together and serve hot over rice or noodles.'
   ],
-  '/images/chicken-stir-fry.png'
+  '/images/chicken-stir-fry.png',
+  'chicken'
 ),
 (
   'seed-user',
@@ -77,7 +84,8 @@ INSERT INTO recipes (user_id, title, ingredients, steps, image_url) VALUES
     'Stir in the spinach and cook until wilted.',
     'Serve with rice or flatbread.'
   ],
-  '/images/vegetable-curry.png'
+  '/images/vegetable-curry.png',
+  'vegetarian'
 ),
 (
   'seed-user',
@@ -99,7 +107,8 @@ INSERT INTO recipes (user_id, title, ingredients, steps, image_url) VALUES
     'Flip and cook until golden brown on the other side.',
     'Serve with syrup, fruit, or your favorite toppings.'
   ],
-  '/images/classic-pancakes.png'
+  '/images/classic-pancakes.png',
+  'breakfast'
 );
 
 update recipes set image_url = '/images/spaghetti-carbonara.png' where title = 'Spaghetti Carbonara';

@@ -12,7 +12,10 @@ export default function SearchBar({ placeholder = 'Search recipes...' }) {
   function handleSubmit(event) {
     event.preventDefault()
     const nextQuery = query.trim()
-    router.push(nextQuery ? `/search?q=${encodeURIComponent(nextQuery)}` : '/search')
+    const params = new URLSearchParams(searchParams.toString())
+    if (nextQuery) params.set('q', nextQuery)
+    else params.delete('q')
+    router.push(params.size ? `/search?${params}` : '/search')
   }
 
   return (
