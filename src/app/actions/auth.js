@@ -38,5 +38,4 @@ export async function signUpAction(prevState, formData) {
 
 export async function signOutAction() {
   await auth.signOut()
-  redirect('/')
 }

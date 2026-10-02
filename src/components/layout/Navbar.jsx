@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
+import { signOutAction } from '@/app/actions/auth'
 import { authClient } from '@/lib/auth/client'
 import ThemeToggle from './ThemeToggle'
 
@@ -14,14 +15,13 @@ const links = [
 
 export default function Navbar() {
   const pathname = usePathname()
-  const router = useRouter()
   const { data: session } = authClient.useSession()
   const user = session?.user
 
   async function handleSignOut() {
-    await authClient.signOut()
-    router.push('/')
-    router.refresh()
+    await authClient.signOut().catch(() => {})
+    await signOutAction()
+    window.location.assign('/sign-in')
   }
 
   return (
