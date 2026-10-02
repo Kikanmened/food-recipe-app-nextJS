@@ -14,6 +14,7 @@ function createAuth() {
     baseUrl,
     cookies: {
       secret,
+      sameSite: 'lax',
     },
   })
 }
