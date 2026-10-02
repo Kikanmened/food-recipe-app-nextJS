@@ -1,8 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { signOutAction } from '@/app/actions/auth'
+import { usePathname, useRouter } from 'next/navigation'
 import { authClient } from '@/lib/auth/client'
 import ThemeToggle from './ThemeToggle'
 
@@ -15,8 +14,15 @@ const links = [
 
 export default function Navbar() {
   const pathname = usePathname()
+  const router = useRouter()
   const { data: session } = authClient.useSession()
   const user = session?.user
+
+  async function handleSignOut() {
+    await authClient.signOut()
+    router.push('/')
+    router.refresh()
+  }
 
   return (
     <div className="navbar bg-base-200 shadow-sm">
@@ -59,11 +65,9 @@ export default function Navbar() {
             <span className="hidden max-w-36 truncate text-sm sm:inline">
               {user.name || user.email}
             </span>
-            <form action={signOutAction}>
-              <button type="submit" className="btn btn-outline">
-                Sign out
-              </button>
-            </form>
+            <button type="button" onClick={handleSignOut} className="btn btn-outline">
+              Sign out
+            </button>
           </>
         ) : (
           <>
