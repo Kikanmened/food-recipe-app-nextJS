@@ -1,5 +1,7 @@
 import { createRecipe, getAllRecipes } from '@/provider/queries'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   const recipes = await getAllRecipes()
   return Response.json(recipes)
@@ -7,7 +9,7 @@ export async function GET() {
 
 export async function POST(request) {
   const { auth } = await import('@/lib/auth/server')
-  const session = await auth.getSession()
+  const { data: session } = await auth.getSession()
 
   if (!session?.user) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
