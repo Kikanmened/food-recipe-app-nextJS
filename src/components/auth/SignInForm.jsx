@@ -1,15 +1,38 @@
 'use client'
 
-import { useActionState } from 'react'
-import { signInAction } from '@/app/actions/auth'
+import { useState } from 'react'
+import { authClient } from '@/lib/auth/client'
 
 export default function SignInForm() {
-  const [state, formAction, isPending] = useActionState(signInAction, {
-    error: undefined,
-  })
+  const [error, setError] = useState('')
+  const [isPending, setIsPending] = useState(false)
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+    setError('')
+    setIsPending(true)
+
+    const formData = new FormData(event.currentTarget)
+    const email = String(formData.get('email') || '')
+    const password = String(formData.get('password') || '')
+
+    const { error: signInError } = await authClient.signIn.email({
+      email,
+      password,
+    })
+
+    setIsPending(false)
+
+    if (signInError) {
+      setError(signInError.message)
+      return
+    }
+
+    window.location.href = '/recipes'
+  }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label htmlFor="email" className="block text-sm font-medium">
           Email
@@ -36,9 +59,7 @@ export default function SignInForm() {
         />
       </div>
 
-      {state?.error && (
-        <p className="text-sm text-red-600">{state.error}</p>
-      )}
+      {error ? <p className="text-sm text-error">{error}</p> : null}
 
       <button
         type="submit"

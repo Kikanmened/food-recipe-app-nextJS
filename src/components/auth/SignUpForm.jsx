@@ -1,15 +1,40 @@
 'use client'
 
-import { useActionState } from 'react'
-import { signUpAction } from '@/app/actions/auth'
+import { useState } from 'react'
+import { authClient } from '@/lib/auth/client'
 
 export default function SignUpForm() {
-  const [state, formAction, isPending] = useActionState(signUpAction, {
-    error: undefined,
-  })
+  const [error, setError] = useState('')
+  const [isPending, setIsPending] = useState(false)
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+    setError('')
+    setIsPending(true)
+
+    const formData = new FormData(event.currentTarget)
+    const name = String(formData.get('name') || '')
+    const email = String(formData.get('email') || '')
+    const password = String(formData.get('password') || '')
+
+    const { error: signUpError } = await authClient.signUp.email({
+      name,
+      email,
+      password,
+    })
+
+    setIsPending(false)
+
+    if (signUpError) {
+      setError(signUpError.message)
+      return
+    }
+
+    window.location.href = '/recipes'
+  }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label htmlFor="name" className="block text-sm font-medium">
           Name
@@ -50,9 +75,7 @@ export default function SignUpForm() {
         />
       </div>
 
-      {state?.error && (
-        <p className="text-sm text-error">{state.error}</p>
-      )}
+      {error ? <p className="text-sm text-error">{error}</p> : null}
 
       <button
         type="submit"

@@ -38,3 +38,8 @@ export const auth = new Proxy(
     },
   }
 )
+
+export async function getCurrentUser() {
+  const { data: session } = await getAuth().getSession()
+  return session?.user ?? null
+}
